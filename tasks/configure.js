@@ -33,7 +33,19 @@ module.exports = function(grunt) {
     var manifest = grunt.file.readJSON(manifestFile); //get file as a string
 
     var configFile = "build/js/config.js";
-    var config = grunt.file.readJSON(configFile); //get file as a json
+    // Note that this is frugly because config.js currently is frugly. Config is
+    // defined as a global object without any context, so it'll end in
+    // window. But OTProperties on the other hand is explicitly defined as
+    // window.OTProperties. To make this short, if the config file format
+    // changes at some point, this *will* have to be changed also.
+    var wConfig = (
+      new Function(
+        "window",
+        grunt.file.read(configFile) +
+        "; return { Config: Config, OTProperties: window.OTProperties };")
+      )({});
+
+    var config = wConfig.Config;
 
     // Configure debug parameter, just require changes in config.js
     var debug = grunt.option('debug') || false;
@@ -60,20 +72,21 @@ module.exports = function(grunt) {
     var appOrigin = "loop.services.mozilla.com";
     var port = "";
     var protocol = "https";
+    var locales, i;
     switch (loopServer) {
       case "stage":
         appOrigin = "loop.stage.mozaws.net";
         manifest.name = "Hello Stage";
-        var locales = manifest.locales;
-        for (var i in locales) {
+        locales = manifest.locales;
+        for (i in locales) {
           locales[i].name = "Hello Stage";
         }
         break;
       case "development":
         appOrigin = "loop-dev.stage.mozaws.net";
         manifest.name = "Hello Dev";
-        var locales = manifest.locales;
-        for (var i in locales) {
+        locales = manifest.locales;
+        for (i in locales) {
           locales[i].name = "Hello Dev";
         }
         break;
@@ -88,10 +101,10 @@ module.exports = function(grunt) {
         var serverUrl = url.parse(loopServer);
         if (serverUrl.hostname != null) {
           appOrigin = serverUrl.hostname;
-          manifest.name = "Hello " + hostname;
-          var locales = manifest.locales;
-          for (var i in locales) {
-            locales[i].name = "Hello " + hostname;
+          manifest.name = "Hello " + appOrigin;
+          locales = manifest.locales;
+          for (i in locales) {
+            locales[i].name = "Hello " + appOrigin;
           }
           if (serverUrl.port != null) {
             port = ":" + serverUrl.port;
@@ -146,7 +159,10 @@ module.exports = function(grunt) {
         break;
     }
 
-    grunt.file.write(configFile, JSON.stringify(config, null, 2));
+    grunt.file.write(configFile,
+                     "Config = " + JSON.stringify(config, null, 2) +
+                     ";\n\nwindow.OTProperties = " +
+                     JSON.stringify(wConfig.OTProperties, null, 2) + ";\n");
     grunt.file.write(manifestFile, JSON.stringify(manifest, null, 2));
   });
 }
