@@ -1,5 +1,7 @@
 
-require("./libs/hawk.js");
+window.useSJCLCrypto = true;
+require('libs/lazy_loader.js');
+require('js/helpers/hawk.js');
 
 var testCases = [
   {
@@ -296,7 +298,23 @@ var testCases = [
 
 var extraUndefinedProperties = ['app', 'dlg', 'ext', 'hash'];
 
-suite("Hawk tests > ", function()  {
+var hawkObject = null;
+
+suite("Hawk tests, " + VERSION_USED +" > ", function()  {
+
+  // window.hawk should be a Promise, and should fulfill
+  test("Check that window.hawk is a Promise", function() {
+    chai.assert.ok(window.hawk && window.hawk.then,
+                   'window.hawk is not a promise');
+  });
+
+  // The promise should fuwindow.hawk should be a Promise, and should fulfill
+  test("Check that the promise fulfills", function(done) {
+    window.hawk.then( ho => {
+      hawkObject = ho;
+      done();
+    });
+  });
   testCases.forEach(function(testCase) {
     // Due to the way we generated the test cases, we need to
     // add some extra properties.
@@ -305,10 +323,13 @@ suite("Hawk tests > ", function()  {
     }
     test('Key: ' + testCase.options.credentials.id.substring(0,5) +
          ' ' + testCase.method + ' ' + testCase.uri, function(done) {
-      var testOutput =
-        hawk.client.header(testCase.uri, testCase.method, testCase.options);
-      chai.assert.deepEqual(testCase.expectedOutput, testOutput);
-      done();
+         hawkObject.client.header(testCase.uri, testCase.method, testCase.options).
+             then(testOutput => {
+               console.log("TO: " + JSON.stringify(testOutput, null, 2));
+               console.log("EO: " + JSON.stringify(testCase.expectedOutput, null, 2));
+               chai.assert.deepEqual(testCase.expectedOutput, testOutput);
+               done();
+             });
     });
   });
 });
