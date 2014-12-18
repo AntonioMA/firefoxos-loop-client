@@ -138,16 +138,16 @@
             _callback(onerror, [new Error('No session token')]);
             return;
           }
-          LazyLoader.load(['libs/sjcl.min.js',
-                           'libs/token.js'], () => {
-            deriveHawkCredentials(sessionToken, 'sessionToken', 2 * 32,
-              function(hawkCredentials) {
+          LazyLoader.load(['js/helpers/hawk_creds.js'], () => {
+            window.hawkCredentials.
+              then(hc => hc.derive(sessionToken, 'sessionToken', 2 * 32)).
+              then( hawkCredential => {
                 _hawkCredentials = {
                   type: 'Hawk',
-                  value: hawkCredentials
+                  value: hawkCredential
                 };
                 _callback(onsuccess, [result, _hawkCredentials]);
-            });
+              });
           });
         },
         onerror);
