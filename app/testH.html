@@ -1,0 +1,96 @@
+<!DOCTYPE HTML>
+<meta charset="UTF-8">
+<html>
+	<script src="./libs/sjcl.min.js"></script>
+	<script src="./js/helpers/hawk.js"></script>
+<script>
+
+var hawkCredentials = [
+{
+  algorithm: "sha256",
+  id:  "f67bcc25b640723f289efa10f721269d26658cfe0e505edde952ce7524e7e75f",
+  key: "11a48ad4cc4190bfa735fb74f8f809455686f10667ff45dd3ab516576728ac7e",
+  bundleKey: "81b8744ed308a46b1224bc4d99ef36c35b628e62ae4aa129abe219ffb255a629"
+},
+ {
+          algorithm: "sha256",
+          id:
+            "1efc3bb0e12ece9309bad58d4fe0aeb34c068ff32be6af4b1d71fccc343117ef",
+          key:
+            "0ad7c708f683e1d11fcd0180836a38ca9ad418f2794c619ed52398378f8413ab",
+          bundleKey: "1b1a6f4695f64bbf81c1470b236ea7fce3e1bc60330116598f6f42" +
+            "c8075e8aa350f7071bb8f68518233cb870ef2bc244029e5fc9d3e1b6223e6a7" +
+            "8515b00abc9"
+        },
+{
+          algorithm: "sha256",
+          id:
+            "0bec7687f590420d87ca9fca442ae454efc1e1067afe5dba3b37405c62ed0fd9",
+          key:
+            "83c4eeeb1b2d67367e3101dc81060f1f0183de7a3a6d24c6bda25d8eea9649e8",
+          bundleKey: "fd7542384d194d4aece0c2575ab2238c7ecb13e5f1d43d9d3bd0b" +
+            "732a281c989915c21e7dc150e3b7fe926df68abe57fa9c1c836e1fbdfa7de6" +
+            "d2f1de2b9725e5f969ed17bb5cd5e3ff60b5372a16bd6328dadd8685435b08" +
+            "2fa73c781e34287"
+        }
+];
+
+var resources = [
+{
+  uri: "https://any.url.will.do/here/for/this",
+  method: "POST",
+  nonce: "asag32",
+},
+{
+  uri: "http://an.unsecure.host.com/with/a/path",
+  method: "GET",
+  nonce: "ADggse",
+  timestamp: 123235121
+},
+{
+  uri: "https://any.url.will.do/here/for/this",
+  method: "GET",
+  timestamp: 123671256,
+},
+{
+  uri: "http://an.unsecure.host.com/with/a/path",
+  method: "POST",
+  timestamp: 12367891,
+  nonce: "fKBqOP"
+}
+];
+
+
+function runTest() {
+  'use strict'
+  var div = document.getElementById("output");
+
+  var testCases = [];
+
+  hawkCredentials.forEach(hawkCredential => {
+    resources.forEach(res => {
+     var testCase = {
+       uri: res.uri,
+       method: res.method,
+       options: {
+         timestamp: res.timestamp,
+         nonce: res.nonce,
+         credentials: hawkCredential,
+         payload:'{"some":"payload"}'
+       }
+}
+     testCase.expectedOutput =
+        hawk.client.header(testCase.uri, testCase.method, testCase.options);
+     testCases.push(testCase);
+});
+});
+     div.innerHTML = div.innerHTML + 
+       "<p>testCases = " + JSON.stringify(testCases, null, "<br>") + "</p>";
+
+}
+
+</script>
+<body onload = "runTest();">
+<div id="output"></div>
+</body>
+</html>
