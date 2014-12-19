@@ -72,7 +72,36 @@
     }
   }
 
+  var hawkCrypto = null;
+
+  // Since hawk.crypto and hawk.crypto.getClientHeader are promises now,
+  // and so we don't have to change the logic, we just check here and
+  // continue when we have all the data we need.
   function _request(options, onsuccess, onerror, skipRetry) {
+    if (options.credentials && options.credentials.type !== 'BrowserID') {
+      if (hawkCrypto === null) {
+        window.hawk.crypto.then(hc => {
+          // Just retry after getting hawkCrypto
+          hawkCrypto = hc;
+          _request(options, onsuccess, onerror, skipRetry);
+        });
+        return;
+      }
+      // At this point we have hawkCrypto, so we can generate the header and pass it
+      hawkCrypto.getClientHeader(options.url, options.method, {
+        credentials: options.credentials.value,
+        localtimeOffsetMsec: _localtimeOffsetMsec
+      }).then(
+        hawkHeader =>
+          _fulfillRequest(options, onsuccess, onerror, skipRetry, hawkHeader)
+      );
+
+    } else {
+      _fulfillRequest(options, onsuccess, onerror, skipRetry);
+    }
+  }
+
+  function _fulfillRequest(options, onsuccess, onerror, skipRetry, hawkHeader) {
     if (!_ready && (!options.skipQueue)) {
       if (!_requestQueue) {
         _requestQueue = [];
@@ -100,10 +129,6 @@
             options.credentials.type + ' ' + options.credentials.value;
           break;
         default:
-          var hawkHeader = hawk.client.header(options.url, options.method, {
-            credentials: options.credentials.value,
-            localtimeOffsetMsec: _localtimeOffsetMsec
-          });
           authorization = hawkHeader.field;
           break;
       }
